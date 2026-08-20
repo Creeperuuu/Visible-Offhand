@@ -15,6 +15,8 @@ public class ENUSLangProvider extends FabricLanguageProvider {
     public void generateTranslations(HolderLookup.Provider registryLookup, TranslationBuilder translationBuilder) {
         translationBuilder.add("modmenu.nameTranslation.visible_offhand", "Visible Offhand");
         translationBuilder.add("modmenu.descriptionTranslation.visible_offhand", "Show both hands at the same time!");
+        translationBuilder.add("key.category.visible_offhand.visible_offhand", "Visible Offhand");
+        translationBuilder.add("key.visible_offhand.double_hands", "Double Hands");
         translationBuilder.add("button.vo.double_hands", "Double Hands");
         translationBuilder.add("button.vo.reload_config", "Reload Profile/Done");
         translationBuilder.add("button.vo.on", "ON");
