@@ -15,6 +15,8 @@ public class ZHCNLangProvider extends FabricLanguageProvider {
     public void generateTranslations(HolderLookup.Provider registryLookup, TranslationBuilder translationBuilder) {
         translationBuilder.add("modmenu.nameTranslation.visible_offhand", "可见副手");
         translationBuilder.add("modmenu.descriptionTranslation.visible_offhand", "让你的第一人称视角内同时渲染两只手！");
+        translationBuilder.add("key.category.visible_offhand.visible_offhand", "可见副手");
+        translationBuilder.add("key.visible_offhand.double_hands", "显示双手");
         translationBuilder.add("button.vo.double_hands", "显示双手");
         translationBuilder.add("button.vo.reload_config", "重载配置文件/完成");
         translationBuilder.add("button.vo.on", "开");
