@@ -4,6 +4,8 @@
   "button.vo.on": "ON",
   "button.vo.reload_config": "Reload Profile/Done",
   "config.vo.reloaded": "The configuration file has been reloaded!",
+  "key.category.visible_offhand.visible_offhand": "Visible Offhand",
+  "key.visible_offhand.double_hands": "Double Hands",
   "modmenu.descriptionTranslation.visible_offhand": "Show both hands at the same time!",
   "modmenu.nameTranslation.visible_offhand": "Visible Offhand"
 }
