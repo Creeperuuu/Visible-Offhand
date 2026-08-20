@@ -9,8 +9,8 @@
 	],
 	"contact": {
 		"homepage": "https://modrinth.com/mod/visible-offhand",
-		"sources": "https://github.com/HopiHopy/Visible-Offhand",
-		"issues": "https://github.com/HopiHopy/Visible-Offhand/issues"
+		"sources": "https://github.com/Creeperuuu/Visible-Offhand",
+		"issues": "https://github.com/Creeperuuu/Visible-Offhand/issues"
 	},
 	"license": "MIT",
 	"icon": "assets/visible_offhand/icon.png",
@@ -33,7 +33,10 @@
 		"visible_offhand.mixins.json"
 	],
 	"depends": {
-		"minecraft": "${minecraft}",
-		"fabric-api": "*"
+		"minecraft": "26.1.2",
+		"fabric-api": ">=0.155.2+26.1.2"
+	},
+	"suggests": {
+		"modmenu": ">=18.0.0-beta.1"
 	}
 }
