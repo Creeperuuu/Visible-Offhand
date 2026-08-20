@@ -4,63 +4,70 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.movtery.visible_offhand.config.Config;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
 import java.nio.file.Path;
 
 public class VisibleOffhandClient implements ClientModInitializer {
-	private static Config config = null;
-	KeyMapping doubleHands;
+    private static Config config = null;
 
-	public static Config getConfig() {
-		if (config == null) loadConfig();
-		return config;
-	}
+    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+            Identifier.fromNamespaceAndPath(VisibleOffhand.MOD_ID, "visible_offhand")
+    );
 
-	private static void loadConfig() {
-		Path configPath = FabricLoader.getInstance().getConfigDir();
-		File configFile = new File(configPath.toFile(), "visible_offhand.json");
-		config = new Config(configFile);
-		config.load();
-	}
+    private final KeyMapping doubleHands = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.visible_offhand.double_hands",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            CATEGORY
+    ));
 
-	public static void reloadConfig() {
-		if (config == null) loadConfig();
-		config.load();
-		VisibleOffhand.LOGGER.info("The configuration file has been reloaded!");
-	}
+    public static Config getConfig() {
+        if (config == null) {
+            loadConfig();
+        }
+        return config;
+    }
 
-	@Override
-	public void onInitializeClient() {
-		doubleHands = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-				"button.vo.double_hands",
-				InputConstants.Type.KEYSYM,
-				GLFW.GLFW_KEY_UNKNOWN,
-				"modmenu.nameTranslation.visible_offhand"
-		));
+    private static void loadConfig() {
+        Path configPath = FabricLoader.getInstance().getConfigDir();
+        File configFile = new File(configPath.toFile(), "visible_offhand.json");
+        config = new Config(configFile);
+        config.load();
+    }
 
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+    public static void reloadConfig() {
+        if (config == null) {
+            loadConfig();
+        }
+        config.load();
+        VisibleOffhand.LOGGER.info("The configuration file has been reloaded!");
+    }
+
+    @Override
+    public void onInitializeClient() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (doubleHands.consumeClick()) {
-                //读写配置文件
                 getConfig().getOptions().doubleHands = !getConfig().getOptions().doubleHands;
                 getConfig().save();
 
-                //给玩家发送一条提示语
                 if (client.player != null) {
-                    Component component;
-                    if (getConfig().getOptions().doubleHands) {
-                        component = Component.translatable("button.vo.double_hands").append(" : ").append(Component.translatable("button.vo.on"));
-                    } else {
-                        component = Component.translatable("button.vo.double_hands").append(" : ").append(Component.translatable("button.vo.off"));
-                    }
-                    client.player.displayClientMessage(component, true);
+                    Component component = Component.translatable("button.vo.double_hands")
+                            .append(" : ")
+                            .append(Component.translatable(
+                                    getConfig().getOptions().doubleHands
+                                            ? "button.vo.on"
+                                            : "button.vo.off"
+                            ));
+                    client.player.sendOverlayMessage(component);
                 }
             }
         });
-	}
+    }
 }
