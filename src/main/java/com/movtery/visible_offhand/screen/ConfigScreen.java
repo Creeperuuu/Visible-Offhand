@@ -19,13 +19,16 @@ public class ConfigScreen extends Screen {
 
     @Override
     protected void init() {
+        boolean doubleHands = getConfig().getOptions().doubleHands;
+
         this.addRenderableWidget(CycleButton.booleanBuilder(
-                        onOrOff(getConfig().getOptions().doubleHands),
-                        onOrOff(!getConfig().getOptions().doubleHands)
+                        onOrOff(true),
+                        onOrOff(false),
+                        doubleHands
                 )
                 .create(this.width / 2 - 112, this.height / 2, 110, 20,
                         Component.translatable("button.vo.double_hands"), (button, enabled) -> {
-                            getConfig().getOptions().doubleHands = !getConfig().getOptions().doubleHands;
+                            getConfig().getOptions().doubleHands = enabled;
                             getConfig().save();
                         }));
 
@@ -50,7 +53,7 @@ public class ConfigScreen extends Screen {
         );
     }
 
-    private Component onOrOff(Boolean button) {
-        return Component.translatable(button ? "button.vo.on" : "button.vo.off");
+    private Component onOrOff(boolean enabled) {
+        return Component.translatable(enabled ? "button.vo.on" : "button.vo.off");
     }
 }
