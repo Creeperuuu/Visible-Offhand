@@ -7,6 +7,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -27,9 +28,18 @@ public abstract class ItemInHandRendererMixin {
                                  float equippedProgress, float swingProgress, HumanoidArm arm) {
     }
 
+    @Shadow
+    private void applyItemArmTransform(PoseStack poseStack, HumanoidArm arm, float equippedProgress) {
+    }
+
+    @Shadow
+    private void applyItemArmAttackTransform(PoseStack poseStack, HumanoidArm arm, float swingProgress) {
+    }
+
     /**
-     * Normal Visible Offhand path. This stays inside vanilla's arm rendering
-     * method so the existing behavior is unchanged when Punchy is absent.
+     * Vanilla/normal Visible Offhand path. Punchy gets a separate path below
+     * so that we never inject another render operation into its animation
+     * method.
      */
     @Inject(
             method = "renderArmWithItem",
@@ -39,7 +49,7 @@ public abstract class ItemInHandRendererMixin {
             AbstractClientPlayer player,
             float frameInterp,
             float xRot,
-            net.minecraft.world.InteractionHand hand,
+            InteractionHand hand,
             float attack,
             ItemStack itemStack,
             float inverseArmHeight,
@@ -48,14 +58,11 @@ public abstract class ItemInHandRendererMixin {
             int lightCoords,
             CallbackInfo ci
     ) {
-        // Punchy has its own first-person renderer. Its renderArmWithItem path
-        // must not be modified by Visible Offhand because that can conflict
-        // with Punchy's animation/render state.
         if (PUNCHY_LOADED || !getConfig().getOptions().doubleHands) {
             return;
         }
 
-        boolean mainHand = hand == net.minecraft.world.InteractionHand.MAIN_HAND;
+        boolean mainHand = hand == InteractionHand.MAIN_HAND;
         Item mainHandItem = player.getMainHandItem().getItem();
         String mainHandItemId = BuiltInRegistries.ITEM.getKey(mainHandItem).toString();
         HumanoidArm offArm = mainHand ? player.getMainArm() : player.getMainArm().getOpposite();
@@ -72,10 +79,15 @@ public abstract class ItemInHandRendererMixin {
     /**
      * Punchy compatibility path.
      *
-     * We wait until the entire vanilla/Punchy hand pass has finished and then
-     * submit one additional empty offhand arm. This avoids injecting into
-     * Punchy's renderArmWithItem animation pipeline while still showing the
-     * offhand arm that Visible Offhand is intended to provide.
+     * Punchy can replace/cancel the normal empty-hand render call, so the
+     * old renderArmWithItem injection cannot reliably render Visible Offhand.
+     * Instead, wait until the hand pass has completed and submit the empty
+     * offhand ourselves.
+     *
+     * We recreate the vanilla arm transforms before calling renderPlayerArm.
+     * The previous implementation called renderPlayerArm directly from the
+     * end of renderHandsWithItems, which left the pose stack in the wrong
+     * coordinate space and resulted in the arm being effectively invisible.
      */
     @Inject(method = "renderHandsWithItems", at = @At("RETURN"))
     private void visibleOffhand$renderPunchyOffhand(
@@ -90,23 +102,27 @@ public abstract class ItemInHandRendererMixin {
             return;
         }
 
+        // Punchy/vanilla should render a real offhand item itself. Visible
+        // Offhand only supplies the missing empty arm.
+        if (!player.getOffhandItem().isEmpty()) {
+            return;
+        }
+
         Item mainHandItem = player.getMainHandItem().getItem();
         String mainHandItemId = BuiltInRegistries.ITEM.getKey(mainHandItem).toString();
-
-        // Only add the arm when the offhand is empty. If Punchy/vanilla is
-        // already rendering an actual offhand item, do not duplicate it.
-        if (!player.getOffhandItem().isEmpty()
-                || mainHandItem == null
-                || getConfig().getOptions().handheldItems.contains(mainHandItemId)) {
+        if (getConfig().getOptions().handheldItems.contains(mainHandItemId)) {
             return;
         }
 
         HumanoidArm offArm = player.getMainArm().getOpposite();
         float attack = player.getAttackAnim(frameInterp);
 
-        // Render after Punchy has completed its own pass, using the same
-        // collector. The arm is intentionally rendered additively so Punchy's
-        // animations remain untouched.
+        // Match the vanilla empty-arm rendering transform. Punchy's own
+        // renderer has already finished, so this additive render cannot
+        // recursively enter Punchy's animation pipeline.
+        poseStack.pushPose();
+        this.applyItemArmTransform(poseStack, offArm, 1.0F);
+        this.applyItemArmAttackTransform(poseStack, offArm, attack);
         this.renderPlayerArm(
                 poseStack,
                 submitNodeCollector,
@@ -115,5 +131,6 @@ public abstract class ItemInHandRendererMixin {
                 attack,
                 offArm
         );
+        poseStack.popPose();
     }
 }
