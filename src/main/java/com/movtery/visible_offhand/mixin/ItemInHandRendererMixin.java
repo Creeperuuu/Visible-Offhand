@@ -1,6 +1,7 @@
 package com.movtery.visible_offhand.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -19,6 +20,17 @@ import static com.movtery.visible_offhand.VisibleOffhandClient.getConfig;
 
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
+    /**
+     * Punchy has its own first-person hand renderer and animation pipeline.
+     * Calling vanilla renderPlayerArm from inside Punchy's render path can cause
+     * the two renderers to repeatedly invoke each other, resulting in severe
+     * frame-time spikes, including in Punchy's animated main menu.
+     *
+     * Visible Offhand therefore lets Punchy take over hand rendering whenever
+     * it is installed. Punchy already provides visible/dual-hand rendering.
+     */
+    private static final boolean PUNCHY_LOADED = FabricLoader.getInstance().isModLoaded("punchy");
+
     @Shadow
     private void renderPlayerArm(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light,
                                  float equippedProgress, float swingProgress, HumanoidArm arm) {
@@ -41,7 +53,9 @@ public abstract class ItemInHandRendererMixin {
             int lightCoords,
             CallbackInfo ci
     ) {
-        if (!getConfig().getOptions().doubleHands) {
+        // Punchy owns the first-person hand renderer when it is installed.
+        // Do not add our extra renderPlayerArm call to its render pipeline.
+        if (PUNCHY_LOADED || !getConfig().getOptions().doubleHands) {
             return;
         }
 
